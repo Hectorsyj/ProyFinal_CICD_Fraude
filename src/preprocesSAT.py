@@ -1,19 +1,29 @@
 import pandas as pd
 import numpy as np
+import os
 import gdown
 import pickle
 from sklearn.impute import KNNImputer
 from sklearn.preprocessing import StandardScaler
+
+# Crear directorio si no existe
+os.makedirs('data', exist_ok=True)
 
 file_id = '1lxQ4x04vIXwhGERd3YBh55bEixlnsimQ'
 url = f'https://drive.google.com/uc?id={file_id}'
 gdown.download(url, 'creditcard.csv', quiet=False)
 data = pd.read_csv('creditcard.csv')
 
-# Datos fuera del estado normal
-colNum = data.select_dtypes(include=['float']).columns
+# Identificar columnas numéricas
+colNum = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
+# Excluir 'Class' de las columnas numéricas para el procesamiento
+if 'Class' in colNum:
+    colNum.remove('Class')
+if 'Time' in colNum:
+    colNum.remove('Time')
+    
 colOth = data.columns.difference(colNum)
-print(colOth)
+
 dfEl = data[colNum].copy()
 Q1 = dfEl.quantile(0.25)
 Q3 = dfEl.quantile(0.75)
@@ -47,5 +57,7 @@ with open('data/X_scaled.pkl', 'wb') as f:
 
 with open('data/y.pkl', 'wb') as f:
     pickle.dump(y, f)
-    
+
+with open('data/scaler.pkl', 'wb') as f:
+    pickle.dump(scaler, f)
 print("preprocesamiento terminado")

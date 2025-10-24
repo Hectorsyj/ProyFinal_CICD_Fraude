@@ -1,9 +1,9 @@
 # filepath: /home/manuelcastiblan/academic/mlflow-deploy/mlflow-deploy/Makefile
 preproces:
-	python preprocesSAT.py
+	python src/preprocesSAT.py
 train:
-	python trainSAT.py 
+	python src/trainSAT.py 
 validate:
-	python validateSAT.py
+	python src/validateSAT.py
 pathModelo:
 	python down_modelSAT.py
