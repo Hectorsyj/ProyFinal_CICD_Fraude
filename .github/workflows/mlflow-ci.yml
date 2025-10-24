@@ -24,7 +24,7 @@ jobs:
           pip install mlflow joblib scikit-learn pandas gdown
 
       - name: preprocesamiento
-        run: make preprocessSAT
+        run: make preprocesSAT
 
       - name: 🧪 Entrenar modelo
         run: make trainSAT
