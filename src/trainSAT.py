@@ -5,7 +5,7 @@ import traceback
 import sys
 import os
 import pickle
-from sklearn.datasets import make_moons
+#from sklearn.datasets import make_moons
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
