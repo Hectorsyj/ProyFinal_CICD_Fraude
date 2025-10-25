@@ -36,8 +36,11 @@ except FileNotFoundError:
 
 # HACER PREDICCIONES
 print("\n🔮 Realizando predicciones...")
-y_pred = model.predict(X_test)
-y_proba = model.predict_proba(X_test)[:, 1]
+y_proba = model.predict(X_test).flatten()  # flatten() convierte de (n,1) a (n,)
+y_pred = (y_proba >= 0.5).astype(int)
+
+print(f"   Probabilidades shape: {y_proba.shape}")
+print(f"   Predicciones shape: {y_pred.shape}")
 
 # CALCULAR MÉTRICAS
 accuracy = accuracy_score(y_test, y_pred)
