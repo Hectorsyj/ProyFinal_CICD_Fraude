@@ -91,7 +91,7 @@ class_weights = class_weight.compute_class_weight(
 
 # construimos el diccionario que usara el sistema keras
 class_weights_dict = dict(enumerate(class_weights))
-print(round(class_weights_dict,3))
+print(class_weights_dict)
 
 #  Crear el modelo
 model = Sequential([
