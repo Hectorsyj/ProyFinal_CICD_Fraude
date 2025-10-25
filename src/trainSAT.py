@@ -5,7 +5,6 @@ import traceback
 import sys
 import os
 import pickle
-#from sklearn.datasets import make_moons
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -14,8 +13,10 @@ from tensorflow.keras.optimizers import Adam
 from sklearn.utils import class_weight
 import matplotlib.pyplot as plt
 
-# se deben importar los datos del preprocesamiento
+# Crear directorio si no existe
+os.makedirs('models', exist_ok=True)
 
+# se deben importar los datos del preprocesamiento
 with open('data/X_scaled.pkl', 'rb') as f:
     X_scaled = pickle.load(f)
 
@@ -167,7 +168,7 @@ try:
             name="model",
             input_example=ejemplo_entrada
         )
-        print(f"✅ Modelo registrado correctamente. MSE: {accuracy:.4f}")
+        print(f"✅ Modelo registrado correctamente. Accuracy: {accuracy:.4f}")
 
     with open("mlflow_run_id.txt", "w") as f:
         f.write(run_id)
@@ -178,6 +179,8 @@ try:
     with open('data/y_test.pkl', 'wb') as f:
       pickle.dump(y_test, f)
 
+    with open('models/model.pkl', 'wb') as f:
+        pickle.dump(model, f)
 
 except Exception as e:
     print(f"\n--- ERROR durante la ejecución de MLflow ---")

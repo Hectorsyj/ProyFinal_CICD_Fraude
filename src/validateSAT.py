@@ -1,69 +1,32 @@
 # src/validate.py
+import pickle
+import numpy as np
+from sklearn.metrics import (
+    classification_report, 
+    confusion_matrix, 
+    roc_auc_score,
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score
+)
 import pandas as pd
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import train_test_split
-import sys
-import matplotlib.pyplot as plt
 import mlflow
-import os
+import pickle
 
-with open('data/X_scaled.pkl', 'rb') as f:
-    X_scaled = pickle.load(f)
+with open('data/X_test.pkl', 'rb') as f:
+    X_test = pickle.load(f)
 
-with open('data/y.pkl', 'rb') as f:
-    y = pickle.load(f)
+with open('data/y_test.pkl', 'rb') as f:
+    y_test = pickle.load(f)
 
-# 9. Evaluar el modelo
-loss, accuracy = model.evaluate(X_test, y_test)
-print(f'Test Accuracy: {accuracy:.4f} | Test Loss: {loss:.4f}')
+with open('models/model.pkl', 'wb') as f:
+    model = pickle.load(f)
 
-# Parámetro de umbral
-acuracVal = 97.0  # Ajusta este umbral según el MSE esperado para load_diabetes
+print(f"✅ Modelo y datos cargados correctamente")
+print(f"   X_test shape: {X_test.shape}")
+print(f"   y_test shape: {y_test.shape}")
 
-# 9. Evaluar el modelo
-loss, accuracy = model.evaluate(X_test, y_test)
-print(f'Test Accuracy: {accuracy:.4f} | Test Loss: {loss:.4f}')
-
-# 10. Visualizar desempeño
-plt.figure(figsize=(12,5))
-plt.subplot(1, 2, 1)
-plt.plot(history.history['loss'], label='Entrenamiento')
-plt.plot(history.history['val_loss'], label='Validación')
-plt.title('Curva de Pérdida')
-plt.xlabel('Época')
-plt.ylabel('Pérdida')
-plt.legend()
-
-plt.subplot(1, 2, 2)
-plt.plot(history.history['accuracy'], label='Entrenamiento')
-plt.plot(history.history['val_accuracy'], label='Validación')
-plt.title('Curva de Precisión')
-plt.xlabel('Época')
-plt.ylabel('Precisión')
-plt.legend()
-
-plt.tight_layout()
-
-
-# División de datos (usar los mismos datos que en entrenamiento no es ideal para validación real,
-# pero necesario aquí para que las dimensiones coincidan. Idealmente, tendrías un split dedicado
-# o usarías el X_test guardado del entrenamiento si fuera posible)
-# Para este ejemplo, simplemente re-dividimos para obtener un X_test con 10 features.
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)  # Añadir random_state para consistencia si es necesario
-print(f"--- Debug: Dimensiones de X_test: {X_test.shape} ---")  # Debería ser (n_samples, 10)
-
-# --- Cargar modelo previamente entrenado ---
-#model_filename = "model.pkl"
-#model_path = os.path.abspath(os.path.join(os.getcwd(), model_filename))
-
-#________________________________________________________________
-# 1. Configurar MLFlow Tracking (debe apuntar al mismo lugar que el entrenamiento)
-# Esto es crucial para que pueda encontrar el run ID
-mlruns_dir = os.path.join(os.getcwd(), "mlruns")
-tracking_uri = "file://" + os.path.abspath(mlruns_dir)
-mlflow.set_tracking_uri(tracking_uri)
-
-# 2. Obtener el Run ID del archivo generado por 'train.py'
 try:
     with open("mlflow_run_id.txt", "r") as f:
         run_id = f.read().strip()
@@ -71,51 +34,69 @@ except FileNotFoundError:
     print("Error: No se encontró 'mlflow_run_id.txt'. El entrenamiento falló o no guardó el ID.")
     exit(1)
 
-# 3. Construir la URI de carga y Cargar el modelo
-# 'model' es el artifact_path que usaste en log_model (artifact_path="model")
-model_uri = f"runs:/{run_id}/model"
+# HACER PREDICCIONES
+print("\n🔮 Realizando predicciones...")
+y_pred = model.predict(X_test)
+y_proba = model.predict_proba(X_test)[:, 1]
 
-print(f"--- Debug: Cargando modelo desde URI: {model_uri} ---")
+# CALCULAR MÉTRICAS
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
+roc_auc = roc_auc_score(y_test, y_proba)
 
-try:
-    # se carga el modelo ya entrenado
-    modelsk = mlflow.sklearn.load_model(model_uri) 
+print("\n" + "="*50)
+print("📊 RESULTADOS DE VALIDACIÓN")
+print("="*50)
+print(f"Accuracy:  {accuracy:.4f}")
+print(f"Precision: {precision:.4f}")
+print(f"Recall:    {recall:.4f}")
+print(f"F1-Score:  {f1:.4f}")
+print(f"ROC-AUC:   {roc_auc:.4f}")
+
+print("\n📋 Reporte de clasificación:")
+print(classification_report(y_test, y_pred, target_names=['No Fraude', 'Fraude']))
+
+print("\n🔢 Matriz de confusión:")
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+print(f"\nVerdaderos Negativos: {cm[0,0]}")
+print(f"Falsos Positivos:     {cm[0,1]}")
+print(f"Falsos Negativos:     {cm[1,0]}")
+print(f"Verdaderos Positivos: {cm[1,1]}")
+
+# VALIDAR SI EL MODELO CUMPLE CON UMBRALES MÍNIMOS
+print("\n" + "="*50)
+print("✅ VALIDACIÓN DE UMBRALES")
+print("="*50)
+
+umbral_roc_auc = 0.85
+umbral_recall = 0.70
+
+if roc_auc >= umbral_roc_auc and recall >= umbral_recall:
+    print(f"✅ MODELO APROBADO")
+    print(f"   ROC-AUC: {roc_auc:.4f} >= {umbral_roc_auc}")
+    print(f"   Recall:  {recall:.4f} >= {umbral_recall}")
     
-    print("✅ Modelo cargado correctamente.")
-#_____________________________________________________ hasta aca se asegura la ruta y la carga del modelo
-
-#print(f"--- Debug: Intentando cargar modelo desde: {model_path} ---")
-#try:
-#    model = joblib.load(model_path)
-except FileNotFoundError:
-    print(f"--- ERROR: No se encontró el archivo del modelo en '{model_uri}'. Asegúrate de que el paso 'make train' lo haya guardado correctamente en la raíz del proyecto. ---")
-    # Listar archivos en el directorio actual para depuración
-    print(f"--- Debug: Archivos en {os.getcwd()}: ---")
-    try:
-        print(os.listdir(os.getcwd()))
-    except Exception as list_err:
-        print(f"(No se pudo listar el directorio: {list_err})")
-    print("---")
-    sys.exit(1)  # Salir con error
-
-# --- Predicción y Validación ---
-print("--- Debug: Realizando predicciones ---")
-try:
-    y_pred = modelsk.predict(X_test)  # Ahora X_test tiene 10 features
-except ValueError as pred_err:
-    print(f"--- ERROR durante la predicción: {pred_err} ---")
-    # Imprimir información de características si el error persiste
-    print(f"Modelo esperaba {modelsk.n_features_in_} features.")
-    print(f"X_test tiene {X_test.shape[1]} features.")
-    sys.exit(1)
-
-mse = mean_squared_error(y_test, y_pred)
-print(f"🔍 MSE del modelo: {mse:.4f} (umbral: {THRESHOLD})")
-
-# Validación
-if mse <= THRESHOLD:
-    print("✅ El modelo cumple los criterios de calidad.")
-    sys.exit(0)  # éxito
+    # Guardar métricas
+    metrics = {
+        'accuracy': accuracy,
+        'precision': precision,
+        'recall': recall,
+        'f1_score': f1,
+        'roc_auc': roc_auc
+    }
+    
+    with open('models/metrics.pkl', 'wb') as f:
+        pickle.dump(metrics, f)
+    
+    print("\n💾 Métricas guardadas en: models/metrics.pkl")
+    exit(0)  # Éxito
 else:
-    print("❌ El modelo no cumple el umbral. Deteniendo pipeline.")
-    sys.exit(1)  # error
+    print(f"❌ MODELO RECHAZADO")
+    if roc_auc < umbral_roc_auc:
+        print(f"   ROC-AUC: {roc_auc:.4f} < {umbral_roc_auc} ❌")
+    if recall < umbral_recall:
+        print(f"   Recall:  {recall:.4f} < {umbral_recall} ❌")
+    exit(1)  # Fallo

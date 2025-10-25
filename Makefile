@@ -6,7 +6,5 @@ train:
 	python src/trainSAT.py 
 validate:
 	python src/validateSAT.py
-pathModelo:
-	python down_modelSAT.py
 
 all: preprocess train validate pathModelo
