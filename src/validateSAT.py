@@ -20,7 +20,7 @@ with open('data/X_test.pkl', 'rb') as f:
 with open('data/y_test.pkl', 'rb') as f:
     y_test = pickle.load(f)
 
-with open('models/model.pkl', 'wb') as f:
+with open('models/model.pkl', 'rb') as f:
     model = pickle.load(f)
 
 print(f"✅ Modelo y datos cargados correctamente")
